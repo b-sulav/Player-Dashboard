@@ -292,6 +292,82 @@ div[class*="st-key-searchres_"] button.kb-highlighted {{
 [data-testid="column"] > div {{
     padding: 0 !important;
 }}
+
+@media (max-width: 640px) {{
+    .st-key-year_row [data-testid="stHorizontalBlock"] {{
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        justify-content: flex-start !important;
+        padding-bottom: 6px !important;
+        gap: 8px !important;
+    }}
+    .st-key-year_row [data-testid="stHorizontalBlock"]::-webkit-scrollbar {{
+        display: none !important;
+    }}
+    .st-key-year_row [data-testid="column"] {{
+        flex: 0 0 auto !important;
+        width: auto !important;
+        min-width: 68px !important;
+    }}
+    .st-key-year_row .stButton > button {{
+        border: 1px solid rgba(255,255,255,0.12) !important;
+        border-bottom: 1px solid rgba(255,255,255,0.12) !important;
+        border-radius: 999px !important;
+        background: rgba(255,255,255,0.02) !important;
+        color: rgba(236,232,225,0.55) !important;
+        height: 42px !important;
+        padding: 0 20px !important;
+        font-size: 1rem !important;
+        letter-spacing: 1.5px !important;
+    }}
+    .st-key-year_row .stButton > button:hover {{
+        border-color: rgba(255,255,255,0.25) !important;
+        color: {VAL_LIGHT} !important;
+    }}
+    .st-key-year_row .st-key-yr_active button {{
+        background: rgba(255,70,85,0.14) !important;
+        border: 1px solid {VAL_RED} !important;
+        border-bottom: 1px solid {VAL_RED} !important;
+        color: {VAL_RED} !important;
+        box-shadow: 0 0 10px rgba(255,70,85,0.2) !important;
+    }}
+
+    .st-key-roster_row .roster-strip {{
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)) !important;
+        flex-wrap: unset !important;
+        gap: 8px !important;
+        padding: 4px 2px !important;
+        justify-content: unset !important;
+    }}
+    .st-key-roster_row .roster-item {{
+        flex: unset !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        border-bottom: none !important;
+        border-radius: 999px !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        background: rgba(255,255,255,0.02) !important;
+        padding: 8px 10px !important;
+    }}
+    .st-key-roster_row .roster-item span {{
+        display: block !important;
+        font-size: 0.95rem !important;
+        letter-spacing: 0.5px !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+        line-height: 1.15 !important;
+    }}
+    .st-key-roster_row .roster-item-active {{
+        border: 1px solid {VAL_RED} !important;
+        background: rgba(255,70,85,0.14) !important;
+        box-shadow: 0 0 10px rgba(255,70,85,0.2) !important;
+    }}
+}}
 </style>
 """,
     unsafe_allow_html=True,
@@ -357,17 +433,18 @@ def home():
 
         df = load_data(st.session_state["vct_year"])
         years = ["21", "22", "23", "24", "25", "26"]
-        yr_cols = st.columns(len(years), gap="small")
-        for yr, c in zip(years, yr_cols):
-            with c:
-                btn_key = (
-                    "yr_active"
-                    if st.session_state["vct_year"] == yr
-                    else f"yr_{yr}"
-                )
-                if st.button(f"20{yr}", key=btn_key, use_container_width=True):
-                    st.session_state["vct_year"] = yr
-                    st.rerun()
+        with st.container(key="year_row"):
+            yr_cols = st.columns(len(years), gap="small")
+            for yr, c in zip(years, yr_cols):
+                with c:
+                    btn_key = (
+                        "yr_active"
+                        if st.session_state["vct_year"] == yr
+                        else f"yr_{yr}"
+                    )
+                    if st.button(f"20{yr}", key=btn_key, use_container_width=True):
+                        st.session_state["vct_year"] = yr
+                        st.rerun()
 
         st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
         query = live_search_input(
@@ -619,7 +696,7 @@ def player():
                 config={"displayModeBar": False},
             )
 
-    with st.container(border=True):
+    with st.container(border=True, key="roster_row"):
         items = []
         for name in players:
             active = name == selected_player
@@ -630,15 +707,17 @@ def player():
                 if active
                 else "border-bottom:2px solid transparent;"
             )
+            item_class = "roster-item roster-item-active" if active else "roster-item"
             items.append(
-                f'<div style="flex:1;min-width:80px;text-align:center;padding:6px 8px;{border_bot}">'
+                f'<div class="{item_class}" '
+                f'style="flex:1;min-width:80px;text-align:center;padding:6px 8px;{border_bot}">'
                 f'<span style="font-family:\'Teko\',sans-serif;font-weight:600;letter-spacing:1.5px;'
                 f'text-transform:uppercase;font-size:1.6rem;line-height:1;'
                 f'color:{color};opacity:{opacity};">'
                 f"{name}</span></div>"
             )
         st.markdown(
-            f'<div style="display:flex;flex-wrap:wrap;align-items:center;'
+            f'<div class="roster-strip" style="display:flex;flex-wrap:wrap;align-items:center;'
             f'justify-content:space-evenly;gap:0;">{"".join(items)}</div>',
             unsafe_allow_html=True,
         )
