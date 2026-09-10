@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-st.set_page_config(page_title="VCT Dashboard", layout="wide")
+st.set_page_config(page_title="Vanlysis", layout="wide", page_icon="logo.png")
 
 VAL_RED     = "#FF4655"
 VAL_RED_DIM = "rgba(255, 70, 85, 0.35)"
