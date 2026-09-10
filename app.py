@@ -117,7 +117,7 @@ def live_search_input(placeholder="", *, default="", key=None):
 
 @st.cache_data
 def load_data(year):
-    expanded = os.path.expanduser(f"data/clean/pstats{year}.csv")
+    expanded = os.path.expanduser(f"~/development/Player-Dashboard/data/clean/pstats{year}.csv")
     try:
         return pd.read_csv(expanded)
     except FileNotFoundError:
