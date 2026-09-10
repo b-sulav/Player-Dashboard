@@ -1,7 +1,8 @@
-import pandas as pd
-import streamlit as st
-import plotly.graph_objects as go
+from pathlib import Path
 import os
+import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
 
 st.set_page_config(page_title="VCT Dashboard", layout="wide")
 
@@ -115,15 +116,18 @@ def live_search_input(placeholder="", *, default="", key=None):
     )
     return result.value
 
+
 @st.cache_data
 def load_data(year):
-    expanded = os.path.expanduser(f"~/development/Player-Dashboard/data/clean/pstats{year}.csv")
+    file_path = Path(__file__).parent / "data" / "clean" / f"pstats{year}.csv"
     try:
-        return pd.read_csv(expanded)
+        return pd.read_csv(file_path)
     except FileNotFoundError:
         return pd.DataFrame()
 
-st.markdown(f"""
+
+st.markdown(
+    f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@400;500;600;700&display=swap');
 
@@ -289,7 +293,10 @@ div[class*="st-key-searchres_"] button.kb-highlighted {{
     padding: 0 !important;
 }}
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
+
 
 def pct_badge_html(pct):
     if pct is None or (isinstance(pct, float) and pd.isna(pct)):
@@ -324,11 +331,13 @@ def stat_card(label, value, pct=None):
         unsafe_allow_html=True,
     )
 
+
 def home():
     _, col, _ = st.columns([1, 2, 1])
     with col:
         st.markdown("<div style='height:60px'></div>", unsafe_allow_html=True)
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div style="text-align:center;margin-bottom:4px;">
             <span style="font-family:'Teko',sans-serif;font-weight:700;font-size:3.6rem;
                          letter-spacing:6px;text-transform:uppercase;color:{VAL_LIGHT};
@@ -342,14 +351,20 @@ def home():
                     margin-bottom:36px;">
             VALORANT CHAMPIONS TOUR
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
         df = load_data(st.session_state["vct_year"])
         years = ["21", "22", "23", "24", "25", "26"]
         yr_cols = st.columns(len(years), gap="small")
         for yr, c in zip(years, yr_cols):
             with c:
-                btn_key = "yr_active" if st.session_state["vct_year"] == yr else f"yr_{yr}"
+                btn_key = (
+                    "yr_active"
+                    if st.session_state["vct_year"] == yr
+                    else f"yr_{yr}"
+                )
                 if st.button(f"20{yr}", key=btn_key, use_container_width=True):
                     st.session_state["vct_year"] = yr
                     st.rerun()
@@ -362,41 +377,60 @@ def home():
 
         selected_player = None
         if query and not df.empty:
-            mask = df["Player"].astype(str).str.lower().str.startswith(query.lower())
+            mask = (
+                df["Player"]
+                .astype(str)
+                .str.lower()
+                .str.startswith(query.lower())
+            )
             matches = df[mask]["Player"].drop_duplicates().tolist()[:8]
             if matches:
                 with st.container(border=True, key="search_results_box"):
                     for name in matches:
-                        if st.button(name, key=f"searchres_{name}", use_container_width=True):
+                        if st.button(
+                            name,
+                            key=f"searchres_{name}",
+                            use_container_width=True,
+                        ):
                             selected_player = name
         if df.empty:
-            st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
-            st.markdown(f"""
+            st.markdown(
+                "<div style='height:20px'></div>", unsafe_allow_html=True
+            )
+            st.markdown(
+                f"""
             <div style="padding:14px 18px;border:1px solid {VAL_RED}44;
                         background:rgba(255,70,85,0.04);
                         font-family:'Rajdhani',sans-serif;font-size:0.92rem;
                         color:rgba(236,232,225,0.55);letter-spacing:0.5px;">
                 No data found for VCT 20{st.session_state["vct_year"]}.
                 Check your data files.
-            </div>""", unsafe_allow_html=True)
+            </div>""",
+                unsafe_allow_html=True,
+            )
             return
 
         if selected_player:
             st.session_state["selected_player"] = selected_player
             st.switch_page(player_page)
 
+
 def player():
     selected_player = st.session_state.get("selected_player")
-    current_year    = st.session_state.get("vct_year", "21")
-    df              = load_data(current_year)
+    current_year = st.session_state.get("vct_year", "21")
+    df = load_data(current_year)
 
-    if not selected_player or df.empty or selected_player not in df["Player"].values:
+    if (
+        not selected_player
+        or df.empty
+        or selected_player not in df["Player"].values
+    ):
         st.switch_page(home_page)
         return
 
-    p_data    = df[df["Player"] == selected_player].iloc[0]
+    p_data = df[df["Player"] == selected_player].iloc[0]
     team_name = p_data.get("Teams", "")
-    players   = df[df["Teams"] == team_name]["Player"].drop_duplicates().tolist()
+    players = df[df["Teams"] == team_name]["Player"].drop_duplicates().tolist()
 
     scores = [
         p_data.get("ACS Percentile", 0),
@@ -404,7 +438,7 @@ def player():
         p_data.get("ADR Percentile", 0),
         p_data.get("Headshot Percentile", 0),
     ]
-    categories    = ["ACS", "K/D", "ADR", "H%"]
+    categories = ["ACS", "K/D", "ADR", "H%"]
     overall_score = p_data.get("Average Percentile", 0)
 
     col_back, col_badge = st.columns([1, 5], gap="small")
@@ -416,7 +450,8 @@ def player():
             st.switch_page(home_page)
 
     with col_badge:
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div style="display:flex;align-items:center;justify-content:center;
                     height:40px;
                     border:1px solid rgba(255,70,85,0.18);
@@ -432,7 +467,9 @@ def player():
                 20{current_year}
             </span>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
@@ -448,8 +485,8 @@ def player():
                 f'<span style="font-family:\'Teko\',sans-serif;font-weight:600;letter-spacing:2.5px;'
                 f'text-transform:uppercase;font-size:1.1rem;color:{VAL_TEAL};'
                 f'border:1px solid rgba(0,240,255,0.3);padding:3px 14px;white-space:nowrap;">'
-                f'{team_name}</span>'
-                f'</div>',
+                f"{team_name}</span>"
+                f"</div>",
                 unsafe_allow_html=True,
             )
         with h_right:
@@ -457,10 +494,10 @@ def player():
 
     sc1, sc2, sc3, sc4 = st.columns(4, gap="small")
     stat_defs = [
-        ("ACS",        "Average Combat Score",    "Average Combat Score",    scores[0]),
-        ("K/D",        "K/D Ratio",               "Kills:Deaths",            scores[1]),
-        ("ADR",        "Avg Damage / Round",       "Average Damage Per Round",scores[2]),
-        ("HS%",        "Headshot %",               "Headshot %",              scores[3]),
+        ("ACS", "Average Combat Score", "Average Combat Score", scores[0]),
+        ("K/D", "K/D Ratio", "Kills:Deaths", scores[1]),
+        ("ADR", "Avg Damage / Round", "Average Damage Per Round", scores[2]),
+        ("HS%", "Headshot %", "Headshot %", scores[3]),
     ]
     for col, (_, label, key, score) in zip([sc1, sc2, sc3, sc4], stat_defs):
         with col:
@@ -469,24 +506,27 @@ def player():
 
     ch1, ch2 = st.columns(2, gap="small")
 
-    cats_closed   = categories + [categories[0]]
+    cats_closed = categories + [categories[0]]
     scores_closed = scores + [scores[0]]
 
     with ch1:
         with st.container(border=True):
-            fig_radar = go.Figure(data=go.Scatterpolar(
-                r=scores_closed,
-                theta=cats_closed,
-                fill="toself",
-                line=dict(color=VAL_RED, width=2),
-                fillcolor="rgba(255,70,85,0.2)",
-                hovertemplate="<b>%{theta}</b>: %{r:.1f}<extra></extra>",
-            ))
+            fig_radar = go.Figure(
+                data=go.Scatterpolar(
+                    r=scores_closed,
+                    theta=cats_closed,
+                    fill="toself",
+                    line=dict(color=VAL_RED, width=2),
+                    fillcolor="rgba(255,70,85,0.2)",
+                    hovertemplate="<b>%{theta}</b>: %{r:.1f}<extra></extra>",
+                )
+            )
             fig_radar.update_layout(
                 title=dict(
                     text="PERFORMANCE RADAR",
                     font=dict(family="Teko", size=17, color=VAL_LIGHT),
-                    x=0.5, xanchor="center",
+                    x=0.5,
+                    xanchor="center",
                 ),
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
@@ -495,80 +535,107 @@ def player():
                 polar=dict(
                     bgcolor="rgba(0,0,0,0)",
                     radialaxis=dict(
-                        visible=True, range=[0, 100],
+                        visible=True,
+                        range=[0, 100],
                         showticklabels=False,
                         linecolor="rgba(255,255,255,0.1)",
                         gridcolor="rgba(255,255,255,0.08)",
                     ),
                     angularaxis=dict(
-                        tickfont=dict(color=VAL_TEAL, size=13, family="Rajdhani"),
+                        tickfont=dict(
+                            color=VAL_TEAL, size=13, family="Rajdhani"
+                        ),
                         linecolor="rgba(255,255,255,0.1)",
                         gridcolor="rgba(255,255,255,0.08)",
                     ),
                 ),
                 showlegend=False,
             )
-            st.plotly_chart(fig_radar, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(
+                fig_radar,
+                use_container_width=True,
+                config={"displayModeBar": False},
+            )
 
     with ch2:
         with st.container(border=True):
-            fig_gauge = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=overall_score,
-                number=dict(
-                    suffix="%",
-                    font=dict(color=VAL_LIGHT, size=38, family="Teko"),
-                    valueformat=".0f",
-                ),
-                title=dict(text="", font=dict(color=VAL_LIGHT, size=14)),
-                gauge=dict(
-                    axis=dict(
-                        range=[0, 100], tickwidth=1,
-                        tickcolor="rgba(255,255,255,0.1)",
-                        tickfont=dict(color="rgba(255,255,255,0.35)", size=9),
+            fig_gauge = go.Figure(
+                go.Indicator(
+                    mode="gauge+number",
+                    value=overall_score,
+                    number=dict(
+                        suffix="%",
+                        font=dict(color=VAL_LIGHT, size=38, family="Teko"),
+                        valueformat=".0f",
                     ),
-                    bar=dict(color=VAL_RED, thickness=0.5),
-                    bgcolor="rgba(255,255,255,0.04)",
-                    borderwidth=1,
-                    bordercolor="rgba(255,255,255,0.1)",
-                    steps=[
-                        dict(range=[0,  50], color="rgba(255,255,255,0.02)"),
-                        dict(range=[50, 80], color="rgba(255,255,255,0.04)"),
-                        dict(range=[80,100], color="rgba(0,240,255,0.04)"),
-                    ],
-                    threshold=dict(
-                        line=dict(color=VAL_TEAL, width=2),
-                        thickness=0.8,
-                        value=80,
+                    title=dict(text="", font=dict(color=VAL_LIGHT, size=14)),
+                    gauge=dict(
+                        axis=dict(
+                            range=[0, 100],
+                            tickwidth=1,
+                            tickcolor="rgba(255,255,255,0.1)",
+                            tickfont=dict(
+                                color="rgba(255,255,255,0.35)", size=9
+                            ),
+                        ),
+                        bar=dict(color=VAL_RED, thickness=0.5),
+                        bgcolor="rgba(255,255,255,0.04)",
+                        borderwidth=1,
+                        bordercolor="rgba(255,255,255,0.1)",
+                        steps=[
+                            dict(
+                                range=[0, 50], color="rgba(255,255,255,0.02)"
+                            ),
+                            dict(
+                                range=[50, 80], color="rgba(255,255,255,0.04)"
+                            ),
+                            dict(
+                                range=[80, 100], color="rgba(0,240,255,0.04)"
+                            ),
+                        ],
+                        threshold=dict(
+                            line=dict(color=VAL_TEAL, width=2),
+                            thickness=0.8,
+                            value=80,
+                        ),
                     ),
-                ),
-            ))
+                )
+            )
             fig_gauge.update_layout(
                 title=dict(
                     text="OVERALL PERCENTILE",
                     font=dict(family="Teko", size=17, color=VAL_LIGHT),
-                    x=0.5, xanchor="center",
+                    x=0.5,
+                    xanchor="center",
                 ),
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
                 height=320,
                 margin=dict(l=30, r=30, t=48, b=10),
             )
-            st.plotly_chart(fig_gauge, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(
+                fig_gauge,
+                use_container_width=True,
+                config={"displayModeBar": False},
+            )
 
     with st.container(border=True):
         items = []
         for name in players:
-            active      = name == selected_player
-            color       = VAL_RED if active else VAL_LIGHT
-            opacity     = "1" if active else "0.38"
-            border_bot  = f"border-bottom:2px solid {VAL_RED};" if active else "border-bottom:2px solid transparent;"
+            active = name == selected_player
+            color = VAL_RED if active else VAL_LIGHT
+            opacity = "1" if active else "0.38"
+            border_bot = (
+                f"border-bottom:2px solid {VAL_RED};"
+                if active
+                else "border-bottom:2px solid transparent;"
+            )
             items.append(
                 f'<div style="flex:1;min-width:80px;text-align:center;padding:6px 8px;{border_bot}">'
                 f'<span style="font-family:\'Teko\',sans-serif;font-weight:600;letter-spacing:1.5px;'
                 f'text-transform:uppercase;font-size:1.6rem;line-height:1;'
                 f'color:{color};opacity:{opacity};">'
-                f'{name}</span></div>'
+                f"{name}</span></div>"
             )
         st.markdown(
             f'<div style="display:flex;flex-wrap:wrap;align-items:center;'
@@ -577,6 +644,6 @@ def player():
         )
 
 
-home_page   = st.Page(home,   title="Dashboard", default=True)
+home_page = st.Page(home, title="Dashboard", default=True)
 player_page = st.Page(player, title="Player")
 st.navigation([home_page, player_page]).run()
